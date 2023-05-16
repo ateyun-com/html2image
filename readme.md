@@ -6,7 +6,7 @@
 
 ## 2, Get Start
 ```
-   go get github.com/wnote/html2img
+   go get github.com/ateyun-com/html2image
 ```
 
 ## 3, Examples
