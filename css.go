@@ -1,4 +1,4 @@
-package html2img
+package html2image
 
 import (
 	"fmt"
@@ -73,6 +73,6 @@ func getColor(colorStr string) color.Color {
 		R: uint8(r),
 		G: uint8(g),
 		B: uint8(b),
-		A: uint8(a),
+		A: a,
 	}
 }

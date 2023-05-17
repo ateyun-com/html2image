@@ -1,17 +1,16 @@
-package html2img
+package html2image
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"regexp"
 	"strings"
 
 	"github.com/golang/freetype/truetype"
-	"github.com/wnote/html2img/conf"
 	"golang.org/x/net/html"
 )
 
-const CUT_SET_LIST = "\n\t\b "
+const CutSetList = "\n\t\b "
 
 var fontMapping = make(map[string]*truetype.Font)
 
@@ -39,6 +38,7 @@ type TagStyle struct {
 	Height          string
 	Display         string
 	Position        string
+	TextAlign       string
 
 	BorderRadius Pos
 	Offset       Pos
@@ -49,25 +49,25 @@ type TagStyle struct {
 	BorderStyle  Pos
 }
 
-// 暂时不考虑优先级问题
-func ParseStyle(styleList []string) []*TagStyle {
+// ParseStyle 暂时不考虑优先级问题
+func ParseStyle(styleList []string, fontPath string) []*TagStyle {
 	tagStyleMap := make(map[string]*TagStyle)
 	for _, style := range styleList {
 		subList := strings.Split(style, "}")
 		for _, subTag := range subList {
 			tag := strings.Split(subTag, "{")
 			if len(tag) > 1 {
-				selector := strings.Trim(tag[0], CUT_SET_LIST)
+				selector := strings.Trim(tag[0], CutSetList)
 				re := regexp.MustCompile("/\\s+/")
 				selector = re.ReplaceAllString(selector, " ")
-				classStyle := strings.Trim(tag[1], CUT_SET_LIST)
+				classStyle := strings.Trim(tag[1], CutSetList)
 				classStyleList := strings.Split(classStyle, ";")
 				tagStyle := &TagStyle{}
 				if oldStyle, exist := tagStyleMap[selector]; exist {
 					tagStyle = oldStyle
 				}
 				for _, cStyle := range classStyleList {
-					setTagStyle(tagStyle, cStyle)
+					setTagStyle(tagStyle, cStyle, fontPath)
 				}
 				tagStyleMap[selector] = tagStyle
 			}
@@ -82,8 +82,8 @@ func ParseStyle(styleList []string) []*TagStyle {
 	return tagStyleList
 }
 
-func setTagStyle(tagStyle *TagStyle, cStyle string) {
-	cStyle = strings.Trim(cStyle, CUT_SET_LIST)
+func setTagStyle(tagStyle *TagStyle, cStyle string, fontPath string) {
+	cStyle = strings.Trim(cStyle, CutSetList)
 	if cStyle == "" {
 		return
 	}
@@ -91,8 +91,8 @@ func setTagStyle(tagStyle *TagStyle, cStyle string) {
 	if len(css) != 2 {
 		panic(fmt.Sprintf("unsupported style %v", cStyle))
 	}
-	cssKey := strings.Trim(css[0], CUT_SET_LIST)
-	cssValue := strings.Trim(css[1], CUT_SET_LIST)
+	cssKey := strings.Trim(css[0], CutSetList)
+	cssValue := strings.Trim(css[1], CutSetList)
 	if cssValue == "" {
 		return
 	}
@@ -143,7 +143,7 @@ func setTagStyle(tagStyle *TagStyle, cStyle string) {
 		if cssValue == "" {
 			return
 		}
-		initFontMap(cssValue)
+		initFontMap(cssValue, fontPath)
 		tagStyle.FontFamily = cssValue
 	case "position":
 		tagStyle.Position = cssValue
@@ -282,6 +282,8 @@ func setTagStyle(tagStyle *TagStyle, cStyle string) {
 		default:
 			panic(fmt.Sprintf("unsupported border-radius value %v", cStyle))
 		}
+	case "text-align":
+		tagStyle.TextAlign = cssValue
 	default:
 		panic(fmt.Sprintf("unsupported %v", cStyle))
 
@@ -321,13 +323,13 @@ func (p *TagStyle) selected(currentDom *Dom) bool {
 		panic(fmt.Sprintf("multiple selector will be supported later  %v", p.Selector))
 	}
 
-	subSels := strings.Split(selectors[0], ".")
-	if subSels[0] != "" {
-		if subSels[0] != currentDom.TagName {
+	subSells := strings.Split(selectors[0], ".")
+	if subSells[0] != "" {
+		if subSells[0] != currentDom.TagName {
 			return false
 		}
 	}
-	classList := subSels[1:]
+	classList := subSells[1:]
 	if len(classList) == 0 {
 		return true
 	}
@@ -348,11 +350,10 @@ func (p *TagStyle) selected(currentDom *Dom) bool {
 	return matched
 }
 
-func initFontMap(fontFamily string) {
+func initFontMap(fontFamily string, fontPath string) {
 	if _, exist := fontMapping[fontFamily]; exist {
 		return
 	}
-	fontPath := conf.GConf["font_path"]
 	f, err := getFontFromFile(fontPath + "/" + fontFamily)
 	if err != nil {
 		panic(err)
@@ -360,8 +361,8 @@ func initFontMap(fontFamily string) {
 	fontMapping[fontFamily] = f
 }
 
-func getFontFromFile(fontfile string) (*truetype.Font, error) {
-	fontBytes, err := ioutil.ReadFile(fontfile)
+func getFontFromFile(fontFile string) (*truetype.Font, error) {
+	fontBytes, err := os.ReadFile(fontFile)
 	if err != nil {
 		return nil, err
 	}
@@ -390,6 +391,27 @@ func getInheritStyle(pStyle *TagStyle, curStyle *TagStyle) *TagStyle {
 	}
 	if curStyle.FontFamily == "" && pStyle.FontFamily != "" {
 		curStyle.FontFamily = pStyle.FontFamily
+	}
+	if curStyle.TextAlign == "" && pStyle.TextAlign != "" {
+		curStyle.TextAlign = pStyle.TextAlign
+	}
+	if curStyle.Position == "" && pStyle.Position != "" {
+		curStyle.Position = pStyle.Position
+	}
+	if curStyle.Margin.Right == "" && pStyle.Margin.Right != "" {
+		curStyle.Margin.Right = pStyle.Margin.Right
+	}
+	if curStyle.Margin.Bottom == "" && pStyle.Margin.Bottom != "" {
+		curStyle.Margin.Bottom = pStyle.Margin.Bottom
+	}
+	if curStyle.Margin.Left == "" && pStyle.Margin.Left != "" {
+		curStyle.Margin.Left = pStyle.Margin.Left
+	}
+	if curStyle.Margin.Top == "" && pStyle.Margin.Top != "" {
+		curStyle.Margin.Top = pStyle.Margin.Top
+	}
+	if curStyle.Position == "" && pStyle.Position != "" {
+		curStyle.Position = pStyle.Position
 	}
 	return curStyle
 }

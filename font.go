@@ -1,17 +1,17 @@
-package html2img
+package html2image
 
-import "github.com/wnote/html2img/conf"
+var DPI = float64(72)
 
 func calcCharacterPx(text string, fontSize float64) float64 {
-	return (float64(calCharacterLen(text)) * fontSize * conf.DPI / 72) / 3
+	return (calCharacterLen(text) * fontSize * DPI / 72) / 3
 }
 
 func calCharacterLen(str string) float64 {
 	sl := 0.0
 	rs := []rune(str)
 	for _, r := range rs {
-		rint := int(r)
-		if rint < 128 {
+		rInt := int(r)
+		if rInt < 128 {
 			sl += 1.7
 		} else {
 			sl += 3
@@ -29,7 +29,7 @@ func splitMultiLineText(text string, size float64, domX1, parentX2, parentX1 int
 	var tmpWidth float64
 	for idx, value := range text {
 		subStr := string(value)
-		strWidth := (float64(calCharacterLen(subStr)) * size * conf.DPI / 72) / 3
+		strWidth := (calCharacterLen(subStr) * size * DPI / 72) / 3
 		tmpWidth += strWidth
 		tmpStr += subStr
 		if (idx == 0 && tmpWidth > firstLineWidth) || (idx > 0 && tmpWidth > maxLineWidth) {
