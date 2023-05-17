@@ -1,4 +1,4 @@
-package html2img
+package html2image
 
 import (
 	"fmt"
@@ -15,9 +15,8 @@ import (
 )
 
 const (
-	DOM_TYPE_TEXT        = 1
-	DOM_TYPE_ELEMENT     = 3
-	DOM_TYPE_COMMENTNODE = 4
+	DomTypeText    = 1
+	DomTypeElement = 3
 )
 
 type ImageData struct {
@@ -40,7 +39,7 @@ type Rectangle struct {
 type Dom struct {
 	Outer     Rectangle
 	Container Rectangle
-	Inwall    Rectangle
+	InWall    Rectangle
 	Inner     Rectangle
 
 	DomType  int8
@@ -51,6 +50,10 @@ type Dom struct {
 	TagStyle *TagStyle
 
 	Children []*Dom
+}
+
+func (d *Dom) isPositionRelative() bool {
+	return d.TagStyle.Position == "relative"
 }
 
 func (d *Dom) isPositionAbsolute() bool {
@@ -114,7 +117,7 @@ CHILDREN:
 		}
 		// ignore empty text node
 		if ch.Type == html.TextNode {
-			textData := strings.Trim(ch.Data, CUT_SET_LIST)
+			textData := strings.Trim(ch.Data, CutSetList)
 			if textData == "" {
 				ch = ch.NextSibling
 				continue
@@ -150,6 +153,11 @@ CHILDREN:
 			dom.Inner.Y1 += getIntSize(domStyle.Padding.Top)
 		}
 
+		if domStyle.TextAlign == "center" {
+			//dom.Inner.X1 = 100
+			//fmt.Printf("dom %v %v, width %v, text-align %v \n", dom.Container.X1, dom.Container.X2, width, domStyle.TextAlign)
+		}
+
 		switch ch.Data {
 		case "img":
 			src := getAttr(ch, "src")
@@ -158,7 +166,7 @@ CHILDREN:
 				panic(fmt.Sprintf("http.GetImage err :%v", err))
 			}
 			img, fm, err := image.Decode(resp.Body)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			if err != nil {
 				panic(fmt.Sprintf("image.Decode err :%v", err))
 			}
@@ -376,6 +384,9 @@ func getDomStyle(dom *Dom, tagStyleList []*TagStyle) *TagStyle {
 			if style.Position != "" {
 				finalStyle.Position = style.Position
 			}
+			if style.TextAlign != "" {
+				finalStyle.TextAlign = style.TextAlign
+			}
 
 			finalStyle.Offset = getSelectedPos(finalStyle.Offset, style.Offset)
 			finalStyle.Margin = getSelectedPos(finalStyle.Margin, style.Margin)
@@ -393,11 +404,11 @@ func getDomStyle(dom *Dom, tagStyleList []*TagStyle) *TagStyle {
 func setDomAttr(dom *Dom, htmlNode *html.Node) {
 	dom.DomType = int8(htmlNode.Type)
 	if htmlNode.Type == html.ElementNode {
-		dom.DomType = DOM_TYPE_ELEMENT
+		dom.DomType = DomTypeElement
 		dom.TagName = htmlNode.Data
 		dom.TagClass = getAttr(htmlNode, "class")
 	} else if htmlNode.Type == html.TextNode {
-		dom.DomType = DOM_TYPE_TEXT
+		dom.DomType = DomTypeText
 		dom.TagData = htmlNode.Data
 	}
 }

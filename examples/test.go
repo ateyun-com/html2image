@@ -4,39 +4,38 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"github.com/ateyun-com/html2image"
+	"golang.org/x/net/html"
 	"log"
 	"os"
-
-	"github.com/wnote/html2img"
-	"golang.org/x/net/html"
 )
 
 func OutputImg() {
 	htmlPath := "./example.html"
-	htmlBytes, err := ioutil.ReadFile(htmlPath)
+	fontPath := "./fonts"
+	htmlBytes, err := os.ReadFile(htmlPath)
 	if err != nil {
 		log.Fatal(err)
 	}
-	imgByte, err := html2img.Html2Img(htmlBytes)
+	imgByte, err := html2image.Html2Image(htmlBytes, fontPath)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	fh, err := os.Create("./generated.jpg")
+	fh, err := os.Create("./generated.png")
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	fh.Chmod(0755)
-	fh.Write(imgByte)
-	fh.Close()
+	_ = fh.Chmod(0755)
+	_, _ = fh.Write(imgByte)
+	_ = fh.Close()
 }
 
-// For test
 func ExportJson() {
 	htmlPath := "./example.html"
-	htmlBytes, err := ioutil.ReadFile(htmlPath)
+	fontPath := "./fonts"
+	htmlBytes, err := os.ReadFile(htmlPath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -46,22 +45,22 @@ func ExportJson() {
 		log.Fatal(err)
 	}
 
-	body, styleList := html2img.GetBodyStyle(htmlNode)
+	body, styleList := html2image.GetBodyStyle(htmlNode)
 
 	var styleString []string
 	for _, value := range styleList {
 		styleString = append(styleString, value.FirstChild.Data)
 	}
-	tagStyleList := html2img.ParseStyle(styleString)
+	tagStyleList := html2image.ParseStyle(styleString, fontPath)
 
-	parsedBodyDom := html2img.GetHtmlDom(body, tagStyleList)
+	parsedBodyDom := html2image.GetHtmlDom(body, tagStyleList)
 
 	jsonStr, err := json.MarshalIndent(parsedBodyDom, "", "    ")
 	if err != nil {
 		fmt.Println(err)
 	}
 	fp, err := os.Create("./example.json")
-	fp.Chmod(0755)
-	fp.Write(jsonStr)
-	fp.Close()
+	_ = fp.Chmod(0755)
+	_, _ = fp.Write(jsonStr)
+	_ = fp.Close()
 }
