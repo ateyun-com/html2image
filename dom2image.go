@@ -77,7 +77,7 @@ func drawChildren(dst *image.RGBA, pStyle *TagStyle, children []*Dom) {
 
 				imgData := d.TagData.(ImageData)
 				draw.Draw(dst, dst.Bounds().Add(image.Pt(x, y)), imgData.Img, image.ZP, draw.Over)
-				drawBoxRadius(dst, d.Container, calcStyle, pStyle)
+				//drawBoxRadius(dst, d.Container, calcStyle, pStyle)
 			default:
 				box := d.Container
 				if calcStyle.BackgroundColor != "" {
@@ -89,7 +89,7 @@ func drawChildren(dst *image.RGBA, pStyle *TagStyle, children []*Dom) {
 					}
 				}
 
-				drawBoxRadius(dst, box, calcStyle, pStyle)
+				//drawBoxRadius(dst, box, calcStyle, pStyle)
 
 				borderTopRadius := getIntSize(calcStyle.BorderRadius.Top)
 				borderRightRadius := getIntSize(calcStyle.BorderRadius.Right)
